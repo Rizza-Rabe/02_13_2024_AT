@@ -1,0 +1,247 @@
+SingleChildScrollView(
+            child: Center(
+                child: SizedBox(
+                    width: 700,
+                    child: (_indicators.isEmpty) ? const Align(
+                      alignment: Alignment.center,
+                      child: Text(
+                        "No indicators yet. Check back later",
+                        style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.grey
+                        ),
+                      ),
+                    ): ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _governanceArea.length,
+                      itemBuilder: (context, index){
+                        return Container(
+                          margin: const EdgeInsets.only(left: 3, right: 3, top: 1, bottom: 1),
+                          child: Container(
+                            margin: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                    color: Colors.black,
+                                    width: 1.0
+                                ),
+                                borderRadius: BorderRadius.circular(10)
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Padding(
+                                        padding: const EdgeInsets.only(left: 20, right: 20, top: 15),
+                                        child: Center(
+                                          child: Text(
+                                            _governanceArea[index]["title"].toString(),
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 25
+                                            ),
+                                          ),
+                                        )
+                                    )
+                                ),
+
+                                Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Center(
+                                      child: Text(
+                                        "ID: ${_governanceArea[index]["id"].toString()}",
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    )
+                                ),
+
+                                const SizedBox(
+                                  height: 10,
+                                ),
+
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: _indicators.length,
+                                  itemBuilder: (context, index2){
+
+                                    _answerList.clear();
+                                    for(int a = 0; a < _indicators.length; a++){
+                                      HashMap<dynamic, dynamic> data = HashMap();
+                                      data["indicatorId"] = _indicators[a]["id"].toString();
+                                      data["indicatorTitle"] = _indicators[a]["title"].toString();
+                                      data["governanceArea"] = _governanceArea[index]["title"].toString();
+                                      data["governanceAreaId"] = _governanceArea[index]["id"].toString();
+                                      data["indicatorAnswer"] = "N/A";
+                                      _answerList.insert(a, data);
+                                    }
+
+                                    final subIndicatorList = _indicators[index2]["dataInputMethod"] as Map<dynamic, dynamic>;
+                                    _conditionals = subIndicatorList["type"].toString();
+                                    List<dynamic> checkBoxTitles = [];
+                                    List<dynamic> radioButtonTitle = [];
+
+                                    if(_conditionals == "check_box"){
+                                      Utility().printLog("Value: ${subIndicatorList["value"].toString()}");
+                                      checkBoxTitles = jsonDecode(subIndicatorList["value"].toString());
+                                      Utility().printLog("Check box title: ${checkBoxTitles.length}");
+                                    }
+
+                                    if(_conditionals == "radio_button"){
+                                      Utility().printLog("Value: ${subIndicatorList["value"].toString()}");
+                                      radioButtonTitle = jsonDecode(subIndicatorList["value"].toString());
+                                      Utility().printLog("Radio button title: ${radioButtonTitle.length}");
+                                    }
+
+                                    String radioButtonValue = "none";
+                                    var textFieldInputTextController = TextEditingController();
+                                    List<dynamic> checkBoxTicked = List<dynamic>() = [];
+
+                                    return Container(
+                                        margin: const EdgeInsets.only(left: 3, right: 3, top: 1, bottom: 1),
+                                        child: Container(
+                                          margin: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 10),
+                                          decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(10),
+                                              color: Colors.grey[200]
+                                          ),
+                                          child: ListTile(
+                                              title: Container(
+                                                  padding: const EdgeInsets.all(3),
+                                                  child: Text(
+                                                    _indicators[index2]["title"].toString(),
+                                                    style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold
+                                                    ),
+                                                  )
+                                              ),
+
+                                              subtitle: Padding(
+                                                padding: const EdgeInsets.all(3),
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      _indicators[index2]["id"].toString(),
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+
+                                                    const SizedBox(
+                                                      height: 20,
+                                                    ),
+
+                                                    _conditionals == "numMin%" ?
+                                                    TextFormField(
+                                                      textInputAction: TextInputAction.next,
+                                                      maxLines: 1,
+                                                      autofocus: false,
+                                                      controller: textFieldInputTextController,
+                                                      decoration: const InputDecoration(
+                                                          labelStyle: TextStyle(color: Colors.black),
+                                                          focusColor: Colors.black,
+                                                          hintStyle: TextStyle(color: Colors.black),
+                                                          focusedBorder: OutlineInputBorder(
+                                                              borderSide: BorderSide(color: Colors.black)
+                                                          ),
+                                                          labelText: 'Enter here',
+                                                          border: OutlineInputBorder()
+                                                      ),
+
+                                                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                                                      onChanged: (text){
+                                                        if(text.isNotEmpty){
+                                                          _answerList[index2]["indicatorAnswer"] = text;
+                                                        }else {
+                                                          _answerList[index2]["indicatorAnswer"] = "N/A";
+                                                        }
+
+                                                        Utility().printLog("Answer: $_answerList");
+                                                      },
+                                                    ): _conditionals == "radio_button" ?
+                                                    StatefulBuilder(
+                                                      builder: (statefulContext, statefulSetState){
+                                                        return ListView.builder(
+                                                          shrinkWrap: true,
+                                                          itemCount: radioButtonTitle.length,
+                                                          itemBuilder: (context, radioIndex){
+                                                            return RadioListTile<String>(
+                                                              title: Text(radioButtonTitle[radioIndex]["title"].toString()),
+                                                              value: radioButtonTitle[radioIndex]["title"].toString(),
+                                                              groupValue: radioButtonValue,
+                                                              onChanged: (value) {
+                                                                radioButtonValue = value!;
+                                                                _answerList[index2]["indicatorAnswer"] = value;
+                                                                Utility().printLog("Answer: $_answerList");
+                                                                Utility().printLog("Radio button value: $radioButtonValue");
+                                                                statefulSetState(() {});
+                                                              },
+                                                            );
+                                                          },
+                                                        );
+                                                      },
+                                                    ): _conditionals == "check_box" ?
+                                                    ListView.builder(
+                                                      shrinkWrap: true,
+                                                      itemCount: checkBoxTitles.length,
+                                                      itemBuilder: (context, checkBoxIndex){
+                                                        bool checkBoxValue = false;
+
+                                                        return StatefulBuilder(
+                                                          builder: (statefulContext, statefulSetState){
+                                                            return CheckboxListTile(
+                                                              title: Text(checkBoxTitles[checkBoxIndex]["title"]),
+                                                              value: checkBoxValue,
+                                                              onChanged: (bool? value) {
+                                                                checkBoxValue = value!;
+                                                                if(value == false){
+                                                                  checkBoxTicked.remove(checkBoxTitles[checkBoxIndex]["title"]);
+                                                                }else {
+                                                                  checkBoxTicked.add(checkBoxTitles[checkBoxIndex]["title"]);
+                                                                }
+                                                                String decodedCheckBoxAnswer = jsonEncode(checkBoxTicked);
+                                                                if(checkBoxTicked.isEmpty){
+                                                                  _answerList[index2]["indicatorAnswer"] = "N/A";
+                                                                }else {
+                                                                  _answerList[index2]["indicatorAnswer"] = decodedCheckBoxAnswer;
+                                                                }
+
+                                                                Utility().printLog("Answer: $_answerList");
+                                                                statefulSetState(() {});
+                                                              },
+                                                            );
+                                                          },
+                                                        );
+                                                      },
+                                                    ): _conditionals == "date" ?
+                                                    const Text(
+                                                        "Date picker"
+                                                    ): _conditionals == "upload" ?
+                                                    const Text(
+                                                        "Upload button"
+                                                    ): const Text(
+                                                        "Rating Bar"
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                          ),
+                                        )
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                )
+            ),
+          )

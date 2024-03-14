@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'package:audit_tracker/BottomSheetDialog/change_password.dart';
 import 'package:audit_tracker/Dialogs/classic_dialog.dart';
 import 'package:audit_tracker/Dialogs/loading_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,6 +27,7 @@ class MyAccountDialog{
   final _imagePicker = ImagePicker();
   final _loadingDialog = LoadingDialog();
   final _classicDialog = ClassicDialog();
+  final _changePassword = ChangePassword();
 
   String? _userProfileImage;
   String? _userName;
@@ -33,7 +35,7 @@ class MyAccountDialog{
 
   late BuildContext _context;
 
-  void showMyAccountDialog(BuildContext mainContext, HashMap<String, dynamic> userData, void Function(HashMap<String, dynamic>) newUserData) {
+  void showMyAccountDialog(BuildContext mainContext, HashMap<String, dynamic> userData) {
     _context = mainContext;
 
     String userProfilePicture = userData["userProfilePicture"].toString();
@@ -59,145 +61,75 @@ class MyAccountDialog{
               return Container(
                 padding: const EdgeInsets.all(20),
                 width: DefaultValues().getDefaultWidth(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 3, bottom: 3),
-                      child: Text(
-                        "My Account",
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 3, bottom: 3),
+                        child: Text(
+                          "My Account",
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 20,
+                      ),
+
+                      InkWell(
+                        onTap: (){
+                          _imageSourceSelectDialog.showSourceSelection(context, (source) {
+                            Utility().printLog("Selected source: $source");
+                            _pickImage(source);
+                          });
+                        },
+
+                        borderRadius: BorderRadius.circular(100),
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 3, bottom: 3, left: 3, right: 3),
+                          width: 80,
+                          height: 80,
+                          child: ClipOval(
+                            child: Image.network(
+                                _userProfileImage!
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 5,
+                      ),
+
+                      const Text(
+                        "*Tap the image to pick",
                         style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(
-                      height: 20,
-                    ),
-
-                    InkWell(
-                      onTap: (){
-                        _imageSourceSelectDialog.showSourceSelection(context, (source) {
-                          Utility().printLog("Selected source: $source");
-                          _pickImage(source);
-                        });
-                      },
-
-                      borderRadius: BorderRadius.circular(100),
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 3, bottom: 3, left: 3, right: 3),
-                        width: 80,
-                        height: 80,
-                        child: ClipOval(
-                          child: Image.network(
-                              _userProfileImage!
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(
-                      height: 5,
-                    ),
-
-                    const Text(
-                      "*Tap the image to pick",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic
-                      ),
-                    ),
-
-                    const SizedBox(
-                      height: 10,
-                    ),
-
-                    TextFormField(
-                      textInputAction: TextInputAction.next,
-                      maxLines: 1,
-                      autofocus: false,
-                      controller: _userFullNameTextController,
-                      decoration: InputDecoration(
-                        labelStyle: const TextStyle(color: Colors.black),
-                        focusColor: Colors.black,
-                        hintStyle: const TextStyle(color: Colors.black),
-                        focusedBorder: const OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.black)
-                        ),
-                        labelText: 'User full name',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: Container(
-                          height: 1,
-                          width: 1,
-                          margin: const EdgeInsets.all(12),
-                          child: Image.asset(
-                            'assets/user.png',
-                          ),
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic
                         ),
                       ),
 
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      onChanged: (text){
-                        setState(() {});
-                      },
-                    ),
-
-                    const SizedBox(
-                      height: 20,
-                    ),
-
-                    TextFormField(
-                      textInputAction: TextInputAction.next,
-                      maxLines: 1,
-                      autofocus: false,
-                      controller: _userAddressTextController,
-                      decoration: InputDecoration(
-                        labelStyle: const TextStyle(color: Colors.black),
-                        focusColor: Colors.black,
-                        hintStyle: const TextStyle(color: Colors.black),
-                        focusedBorder: const OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.black)
-                        ),
-                        labelText: 'LGU Address',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: Container(
-                          height: 1,
-                          width: 1,
-                          margin: const EdgeInsets.all(12),
-                          child: Image.asset(
-                            'assets/user.png',
-                          ),
-                        ),
+                      const SizedBox(
+                        height: 10,
                       ),
 
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      onChanged: (text){
-                        setState(() {});
-                      },
-                    ),
-
-                    const SizedBox(
-                      height: 20,
-                    ),
-
-                    IgnorePointer(
-                      ignoring: true,
-                      child: TextFormField(
+                      TextFormField(
                         textInputAction: TextInputAction.next,
                         maxLines: 1,
                         autofocus: false,
-                        controller: _zoneIdTextController,
+                        controller: _userFullNameTextController,
                         decoration: InputDecoration(
-                          labelStyle: const TextStyle(color: Colors.grey),
-                          focusColor: Colors.grey,
-                          hintStyle: const TextStyle(color: Colors.grey),
+                          labelStyle: const TextStyle(color: Colors.black),
+                          focusColor: Colors.black,
+                          hintStyle: const TextStyle(color: Colors.black),
                           focusedBorder: const OutlineInputBorder(
-                              borderSide: BorderSide(color: Colors.grey)
+                              borderSide: BorderSide(color: Colors.black)
                           ),
-                          labelText: 'Zone ID',
-                          helperText: '*Not editable',
+                          labelText: 'User full name',
                           border: const OutlineInputBorder(),
                           prefixIcon: Container(
                             height: 1,
@@ -214,97 +146,194 @@ class MyAccountDialog{
                           setState(() {});
                         },
                       ),
-                    ),
 
-                    const SizedBox(
-                      height: 20,
-                    ),
+                      const SizedBox(
+                        height: 20,
+                      ),
 
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                              onPressed: (){
-                                Navigator.of(modalContext).pop();
-
-                              },
-                              style: ButtonStyle(
-                                textStyle: const MaterialStatePropertyAll(
-                                    TextStyle(
-                                        fontSize: 16
-                                    )
-                                ),
-                                minimumSize: MaterialStateProperty.all(
-                                    const Size(100, 45)
-                                ),
-                                overlayColor: MaterialStateProperty.resolveWith<Color>(
-                                      (Set<MaterialState> states) {
-                                    return Colors.white24;
-                                  },
-                                ),
-                                backgroundColor: MaterialStateProperty.all(Colors.blue),
-                                shape: MaterialStateProperty.all(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30.0),
-                                  ),
-                                ),
-                              ),
-                              child: const Text(
-                                "Cancel",
-                                style: TextStyle(
-                                    color: Colors.white
-                                ),
-                              )
+                      TextFormField(
+                        textInputAction: TextInputAction.next,
+                        maxLines: 1,
+                        autofocus: false,
+                        controller: _userAddressTextController,
+                        decoration: InputDecoration(
+                          labelStyle: const TextStyle(color: Colors.black),
+                          focusColor: Colors.black,
+                          hintStyle: const TextStyle(color: Colors.black),
+                          focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black)
+                          ),
+                          labelText: 'LGU Address',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: Container(
+                            height: 1,
+                            width: 1,
+                            margin: const EdgeInsets.all(12),
+                            child: Image.asset(
+                              'assets/user.png',
+                            ),
                           ),
                         ),
 
-                        const SizedBox(
-                          width: 10,
-                        ),
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                        onChanged: (text){
+                          setState(() {});
+                        },
+                      ),
 
-                        Expanded(
-                          child: TextButton(
-                              onPressed: (){
-                                HashMap<String, dynamic> newUserData = HashMap();
-                                newUserData["userFullName"] = _userFullNameTextController.text.toString();
-                                newUserData["userAddress"] = _userAddressTextController.text.toString();
-                                _updateUserInformation(newUserData, modalContext);
-                              },
-                              style: ButtonStyle(
-                                textStyle: const MaterialStatePropertyAll(
-                                    TextStyle(
-                                        fontSize: 16
-                                    )
-                                ),
-                                minimumSize: MaterialStateProperty.all(
-                                    const Size(100, 45)
-                                ),
-                                overlayColor: MaterialStateProperty.resolveWith<Color>(
-                                      (Set<MaterialState> states) {
-                                    return Colors.white24;
-                                  },
-                                ),
-                                backgroundColor: MaterialStateProperty.all(Colors.blue),
-                                shape: MaterialStateProperty.all(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30.0),
-                                  ),
-                                ),
+                      const SizedBox(
+                        height: 20,
+                      ),
+
+                      IgnorePointer(
+                        ignoring: true,
+                        child: TextFormField(
+                          textInputAction: TextInputAction.next,
+                          maxLines: 1,
+                          autofocus: false,
+                          controller: _zoneIdTextController,
+                          decoration: InputDecoration(
+                            labelStyle: const TextStyle(color: Colors.grey),
+                            focusColor: Colors.grey,
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            focusedBorder: const OutlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey)
+                            ),
+                            labelText: 'Zone ID',
+                            helperText: '*Not editable',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: Container(
+                              height: 1,
+                              width: 1,
+                              margin: const EdgeInsets.all(12),
+                              child: Image.asset(
+                                'assets/user.png',
                               ),
-                              child: const Text(
-                                "Save Changes",
-                                style: TextStyle(
-                                    color: Colors.white
-                                ),
-                              )
+                            ),
                           ),
+
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          onChanged: (text){
+                            setState(() {});
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 10,
+                      ),
+
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: InkWell(
+                            onTap: (){
+                              _changePassword.showChangePasswordDialog(mainContext, userData["userName"], userData["userPassword"]);
+                            },
+
+                            borderRadius: BorderRadius.circular(5),
+                            child: const Padding(
+                              padding: EdgeInsets.all(5),
+                              child: Text(
+                              "Change Password",
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold
+                              ),
+                            ),
+                          )
                         )
-                      ],
-                    )
-                  ],
-                ),
+                      ),
+
+                      const SizedBox(
+                        height: 20,
+                      ),
+
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                                onPressed: (){
+                                  Navigator.of(modalContext).pop();
+
+                                },
+                                style: ButtonStyle(
+                                  textStyle: const MaterialStatePropertyAll(
+                                      TextStyle(
+                                          fontSize: 16
+                                      )
+                                  ),
+                                  minimumSize: MaterialStateProperty.all(
+                                      const Size(100, 45)
+                                  ),
+                                  overlayColor: MaterialStateProperty.resolveWith<Color>(
+                                        (Set<MaterialState> states) {
+                                      return Colors.white24;
+                                    },
+                                  ),
+                                  backgroundColor: MaterialStateProperty.all(Colors.blue),
+                                  shape: MaterialStateProperty.all(
+                                    RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30.0),
+                                    ),
+                                  ),
+                                ),
+                                child: const Text(
+                                  "Cancel",
+                                  style: TextStyle(
+                                      color: Colors.white
+                                  ),
+                                )
+                            ),
+                          ),
+
+                          const SizedBox(
+                            width: 10,
+                          ),
+
+                          Expanded(
+                            child: TextButton(
+                                onPressed: (){
+                                  HashMap<String, dynamic> newUserData = HashMap();
+                                  newUserData["userFullName"] = _userFullNameTextController.text.toString();
+                                  newUserData["userAddress"] = _userAddressTextController.text.toString();
+                                  _updateUserInformation(newUserData, modalContext);
+                                },
+                                style: ButtonStyle(
+                                  textStyle: const MaterialStatePropertyAll(
+                                      TextStyle(
+                                          fontSize: 16
+                                      )
+                                  ),
+                                  minimumSize: MaterialStateProperty.all(
+                                      const Size(100, 45)
+                                  ),
+                                  overlayColor: MaterialStateProperty.resolveWith<Color>(
+                                        (Set<MaterialState> states) {
+                                      return Colors.white24;
+                                    },
+                                  ),
+                                  backgroundColor: MaterialStateProperty.all(Colors.blue),
+                                  shape: MaterialStateProperty.all(
+                                    RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30.0),
+                                    ),
+                                  ),
+                                ),
+                                child: const Text(
+                                  "Save Changes",
+                                  style: TextStyle(
+                                      color: Colors.white
+                                  ),
+                                )
+                            ),
+                          )
+                        ],
+                      )
+                    ],
+                  ),
+                )
               );
             },
             ),

@@ -1,4 +1,3 @@
-import 'package:audit_tracker/BottomSheetDialog/forgotten_password.dart';
 import 'package:audit_tracker/Dialogs/classic_dialog.dart';
 import 'package:audit_tracker/Dialogs/loading_dialog.dart';
 import 'package:audit_tracker/MainActivity/home.dart';
@@ -51,7 +50,6 @@ class _MyHomePageState extends State<MyHomePage> {
   final _passwordTextController = TextEditingController();
   final _loadingDialog = LoadingDialog();
   final _classicDialog = ClassicDialog();
-  final _forgottenPassword = ForgottenPassword();
 
   late SharedPreferences _preferences;
 
@@ -65,16 +63,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _initializeLogic() async {
     _preferences = await SharedPreferences.getInstance();
-    _forgottenPassword.callback = (){
-      Navigator.of(context).pop();
-    };
 
     if(mounted) _loadingDialog.showLoadingDialog(context);
     await Future.delayed(const Duration(milliseconds: 700));
     if(_preferences.getString("userName").toString() != "null" && _preferences.getString("userPassword").toString() != "null"){
       if(mounted) _loadingDialog.dismissDialog(context);
       MessageToaster().showSuccessMessage("Logged-in success");
-      MessageToaster().showNeutralMessage("User name: ${_preferences.getString("userName")}");
       if(mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
       return;
     }
@@ -121,6 +115,20 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     String userPassword = documentSnapshot["userPassword"].toString();
+    if(userPassword == "DILG_PROV"){
+      Utility().printLog("Password is the default password. Log-in the account.");
+      _preferences.setString("userName", documentSnapshot["userName"]);
+      _preferences.setString("userFullName", documentSnapshot["userFullName"]);
+      _preferences.setString("userPassword", documentSnapshot["userPassword"]);
+      _preferences.setString("userProfilePicture", documentSnapshot["userProfilePicture"]);
+      MessageToaster().showSuccessMessage("Log-in successful");
+      if(mounted) _loadingDialog.dismissDialog(context);
+      await Future.delayed(const Duration(milliseconds: 300));
+      if(mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
+
+      return;
+    }
+
     String providedHashedPassword = await ATSecurity().getHashedPassword(_passwordTextController.text);
     Utility().printLog("Database user password: $userPassword");
     Utility().printLog("Provided user password: $providedHashedPassword");
@@ -150,7 +158,6 @@ class _MyHomePageState extends State<MyHomePage> {
     if(mounted) _loadingDialog.dismissDialog(context);
     await Future.delayed(const Duration(milliseconds: 300));
     if(mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
-
   }
 
   @override

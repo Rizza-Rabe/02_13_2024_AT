@@ -1,8 +1,12 @@
 import 'dart:collection';
 
+import 'package:audit_tracker/BottomSheetDialog/change_password.dart';
 import 'package:audit_tracker/BottomSheetDialog/my_account_dialog.dart';
+import 'package:audit_tracker/Dialogs/about_us.dart';
 import 'package:audit_tracker/Dialogs/classic_dialog.dart';
 import 'package:audit_tracker/Dialogs/loading_dialog.dart';
+import 'package:audit_tracker/MainActivity/answer_audit_form.dart';
+import 'package:audit_tracker/MainActivity/area_list.dart';
 import 'package:audit_tracker/Utility/utility.dart';
 import 'package:audit_tracker/main.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,12 +26,16 @@ class HomeState extends State<Home>{
   final _loadingDialog = LoadingDialog();
   final _classicDialog = ClassicDialog();
   final _myAccountDialog = MyAccountDialog();
+  final _changePassword = ChangePassword();
+  final _availableAuditForms = List<dynamic>() = [];
 
   String? _userName = "Loading....";
   String? _userFullname = "Loading...";
   String _userZoneId = "Loading...";
   String _userAddress = "Loading...";
+  String _indicatorTitle = "Loading forms...";
   String? _userProfilePicture = DefaultValues().defaultProfilePicture();
+  String? _userPassword;
   DocumentSnapshot? _documentSnapshot;
   late SharedPreferences  _preferences;
 
@@ -70,6 +78,34 @@ class HomeState extends State<Home>{
 
           _userZoneId = _documentSnapshot!["userZoneId"].toString();
           _userAddress = _documentSnapshot!["userAddress"].toString();
+          _userPassword = _documentSnapshot!["userPassword"].toString();
+
+          if(_documentSnapshot?["userType"].toString() == "admin"){
+            _classicDialog.setTitle("Oops!");
+            _classicDialog.setMessage("Administrator account cannot be log-in on client website. Please use the official administrator website.");
+            _classicDialog.setCancelable(false);
+            _classicDialog.setPositiveButtonTitle("Log out");
+            _classicDialog.showOneButtonDialog(context, () async {
+
+              _loadingDialog.showLoadingDialog(context);
+              await Future.delayed(const Duration(milliseconds: 800));
+              _preferences.setString("userName", "null");
+              _preferences.setString("userPassword", "null");
+              if(_preferences.getString("userName") == "null" && _preferences.getString("userPassword") == "null"){
+                if(mounted) _loadingDialog.dismissDialog(context);
+                await Future.delayed(const Duration(milliseconds: 400));
+                if(mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MyApp()));
+              }
+            });
+          }else if(_documentSnapshot?["userPassword"].toString() == "DILG_PROV" || _userPassword!.length < 10){
+            _classicDialog.setTitle("Change Password Required");
+            _classicDialog.setMessage("New account is required to change the password. Please change your password first to get started.");
+            _classicDialog.setCancelable(false);
+            _classicDialog.setPositiveButtonTitle("Change Password");
+            _classicDialog.showOneButtonDialog(context, () {
+              _changePassword.showChangePasswordDialog(context, _userName!, _documentSnapshot!["userPassword"].toString());
+            });
+          }
 
           isFirestoreLoaded = true;
           setState(() {});
@@ -89,7 +125,18 @@ class HomeState extends State<Home>{
   }
 
   void _loadForms() async {
-    DatabaseReference databaseReference = FirebaseDatabase.instance.ref("Forms");
+    DatabaseReference databaseReference = FirebaseDatabase.instance.ref("Audit");
+    databaseReference.onValue.listen((event) {
+      _availableAuditForms.clear();
+      final Map<dynamic, dynamic> map = event.snapshot.value as Map<dynamic, dynamic>;
+      map.forEach((key, value) {
+        _availableAuditForms.add(value);
+      });
+
+      Utility().printLog("Available forms: ${_availableAuditForms.length}");
+      if(_availableAuditForms.isEmpty) _indicatorTitle = "No available forms yet";
+      setState(() {});
+    });
   }
 
   @override
@@ -98,7 +145,7 @@ class HomeState extends State<Home>{
       child: PopScope(
         canPop: false,
         child: Scaffold(
-          backgroundColor: Colors.grey[100],
+          backgroundColor: Colors.grey[200],
           appBar: AppBar(
             title: Text(
               'Audit Tracker - LGU',
@@ -191,10 +238,9 @@ class HomeState extends State<Home>{
                               userData["userFullName"] = _userFullname;
                               userData["userAddress"] = _userAddress;
                               userData["userZoneId"] = _userZoneId;
+                              userData["userPassword"] = _userPassword;
+                              _myAccountDialog.showMyAccountDialog(context, userData);
 
-                              _myAccountDialog.showMyAccountDialog(context, userData, (newUserData) {
-
-                              });
                             },
                             child: Container(
                               padding: const EdgeInsets.all(8),
@@ -294,7 +340,8 @@ class HomeState extends State<Home>{
                             splashColor: Colors.white24,
                             onTap: (){
                               Navigator.of(context).pop();
-
+                              AboutUs aboutUs = AboutUs();
+                              aboutUs.showAboutUsDialog(context);
                             },
                             child: Container(
                               padding: const EdgeInsets.all(8),
@@ -405,14 +452,13 @@ class HomeState extends State<Home>{
             ),
           ),
 
-          body: const SingleChildScrollView(
-            child: Column(
-              children: [
-                SizedBox(
+          body: Column(
+            children: [
+              const SizedBox(
                   height: 25
-                ),
+              ),
 
-                Align(
+              const Align(
                   alignment: Alignment.topLeft,
                   child: Padding(
                     padding: EdgeInsets.only(left: 25, right: 10),
@@ -424,13 +470,13 @@ class HomeState extends State<Home>{
                       ),
                     ),
                   )
-                ),
+              ),
 
-                SizedBox(
-                  height: 10,
-                ),
+              const SizedBox(
+                height: 10,
+              ),
 
-                Align(
+              const Align(
                   alignment: Alignment.topLeft,
                   child: Padding(
                     padding: EdgeInsets.only(left: 25, right: 10),
@@ -441,14 +487,146 @@ class HomeState extends State<Home>{
                       ),
                     ),
                   )
-                ),
+              ),
 
-                SizedBox(
-                  height: 20,
-                ),
+              const SizedBox(
+                height: 20,
+              ),
 
-              ],
-            ),
+              Flexible(
+                child: (_availableAuditForms.isEmpty) ? Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      _indicatorTitle,
+                      style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 25
+                      ),
+                    )
+                ): SingleChildScrollView(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _availableAuditForms.length,
+                    itemBuilder: (context, index){
+                      return Container(
+                        margin: const EdgeInsets.only(left: 3, right: 3, top: 1, bottom: 1),
+                        child: Card(
+                          color: Colors.white,
+                          child: ListTile(
+                              title: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _availableAuditForms[index]["title"],
+                                        style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold
+                                        ),
+                                      ),
+
+                                      const Spacer(),
+
+                                      Text(
+                                        "Rev. No.: ${_availableAuditForms[index]["revisionNumber"]}",
+                                        style: const TextStyle(
+                                            fontSize: 12
+                                        ),
+                                      ),
+
+                                    ],
+                                  )
+                              ),
+
+                              subtitle: Padding(
+                                padding: const EdgeInsets.all(3),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Author: ${_availableAuditForms[index]["author"]}",
+                                      style: const TextStyle(
+                                        fontSize: 14
+                                      ),
+                                    ),
+
+                                    const SizedBox(
+                                      height: 10,
+                                    ),
+
+                                    Text(
+                                        _availableAuditForms[index]["timestamp"],
+                                      style: const TextStyle(
+                                          fontSize: 14
+                                      ),
+                                    ),
+
+                                    const SizedBox(
+                                      height: 10,
+                                    ),
+
+                                    Text(
+                                      _availableAuditForms[index]["description"].toString(),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey
+                                      ),
+                                    ),
+
+                                    const SizedBox(
+                                      height: 20,
+                                    ),
+
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton(
+                                          onPressed: (){
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => AreaList(auditPushKey: _availableAuditForms[index]["id"].toString())));
+                                          },
+                                          style: ButtonStyle(
+                                            textStyle: const MaterialStatePropertyAll(
+                                                TextStyle(
+                                                    fontSize: 16
+                                                )
+                                            ),
+                                            minimumSize: MaterialStateProperty.all(
+                                                const Size(100, 45)
+                                            ),
+                                            overlayColor: MaterialStateProperty.resolveWith<Color>(
+                                                  (Set<MaterialState> states) {
+                                                return Colors.white24;
+                                              },
+                                            ),
+                                            backgroundColor: MaterialStateProperty.all(Colors.blue),
+                                            shape: MaterialStateProperty.all(
+                                              RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(30.0),
+                                              ),
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            "View Templates",
+                                            style: TextStyle(
+                                                color: Colors.white
+                                            ),
+                                          )
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              )
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                )
+              )
+            ],
           ),
         ),
       ),
